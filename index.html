@@ -180,6 +180,7 @@
     const BASE = `${SUPABASE_URL}/rest/v1/stories`;
     const HEADERS = {
       "Content-Type": "application/json",
+      "Accept": "application/json",
       "apikey": SUPABASE_ANON,
       "Authorization": `Bearer ${SUPABASE_ANON}`,
     };
@@ -223,11 +224,19 @@
     }
 
     async function deleteStory(id) {
-      await fetch(`${BASE}?id=eq.${id}`, {
-        method: "DELETE",
-        headers: HEADERS,
-      });
-      loadStories();
+       const error = document.getElementById("error");
+      error.textContent = "";
+
+      const res = await fetch(`${BASE}?id=eq.${encodeURIComponent(id)}`, {
+         method: "DELETE",
+        headers: { ...HEADERS, "Prefer": "return=minimal" },
+       });
+
+      if (res.ok) {
+        loadStories();
+      } else {
+        error.textContent = "Failed to delete. Check your Supabase config and row permissions.";
+      }
     }
 
     function render(stories) {
