@@ -180,7 +180,6 @@
     const BASE = `${SUPABASE_URL}/rest/v1/stories`;
     const HEADERS = {
       "Content-Type": "application/json",
-      "Accept": "application/json",
       "apikey": SUPABASE_ANON,
       "Authorization": `Bearer ${SUPABASE_ANON}`,
     };
@@ -223,19 +222,21 @@
       }
     }
 
-    async function deleteStory(id) {
-       const error = document.getElementById("error");
-      error.textContent = "";
+    async function deleteStory(id, btn) {
+      btn.disabled = true;
+      btn.textContent = "…";
 
-      const res = await fetch(`${BASE}?id=eq.${encodeURIComponent(id)}`, {
-         method: "DELETE",
+      const res = await fetch(`${BASE}?id=eq.${id}`, {
+        method: "DELETE",
         headers: { ...HEADERS, "Prefer": "return=minimal" },
-       });
+      });
 
       if (res.ok) {
         loadStories();
       } else {
-        error.textContent = "Failed to delete. Check your Supabase config and row permissions.";
+        btn.disabled = false;
+        btn.textContent = "✕";
+        alert("Failed to delete. Check your Supabase RLS policy for DELETE.");
       }
     }
 
@@ -259,7 +260,7 @@
       list.innerHTML = stories.map(s => `
         <li>
           <a href="${s.link}" target="_blank" rel="noopener noreferrer">${s.name}</a>
-          <button class="del" onclick="deleteStory('${s.id}')" title="Remove">✕</button>
+          <button class="del" onclick="deleteStory('${s.id}', this)" title="Remove">✕</button>
         </li>
       `).join("");
     }
