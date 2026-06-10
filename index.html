@@ -185,8 +185,12 @@
     };
 
     async function loadStories() {
-      const res = await fetch(`${BASE}?order=created_at.desc`, { headers: HEADERS });
+      const res = await fetch(`${BASE}`, { headers: HEADERS });
       const stories = await res.json();
+      for (let i = stories.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [stories[i], stories[j]] = [stories[j], stories[i]];
+      }
       render(stories);
     }
 
