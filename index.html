@@ -4,171 +4,234 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Story Log</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Georgia, serif;
-      background: #0d0d14;
-      color: #e8e6f0;
+      font-family: sans-serif;
+      background: #0e0e14;
+      color: #eeeaff;
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: 36px 20px 60px;
     }
 
-    .container { max-width: 750px; margin: 0 auto; }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding-bottom: 14px;
+      border-bottom: 2px solid #eeeaff;
+      margin-bottom: 28px;
+    }
 
     h1 {
-      font-size: 2.5rem;
-      color: #fff;
-      margin-bottom: 6px;
-      letter-spacing: -1px;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #eeeaff;
+      letter-spacing: -0.5px;
+      line-height: 1;
     }
 
     .subtitle {
-      color: #7070a0;
-      font-size: 0.95rem;
-      margin-bottom: 36px;
-      font-family: sans-serif;
+      font-size: 0.72rem;
+      color: #3e3e58;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-top: 8px;
     }
 
+    /* ── Form card ── */
     .card {
-      background: #13131e;
-      border: 1px solid #252535;
-      border-radius: 12px;
-      padding: 24px;
+      background: #13131c;
+      border: 1px solid #22222f;
+      border-radius: 14px;
+      padding: 20px;
       margin-bottom: 32px;
     }
 
     label {
       display: block;
-      font-size: 0.7rem;
-      letter-spacing: 2px;
+      font-size: 0.68rem;
+      letter-spacing: 1.8px;
       text-transform: uppercase;
-      color: #7070a0;
-      font-family: sans-serif;
-      margin-bottom: 7px;
-      margin-top: 16px;
+      color: #3e3e58;
+      margin-bottom: 6px;
+      margin-top: 14px;
     }
 
     label:first-child { margin-top: 0; }
 
     input {
       width: 100%;
-      background: #0d0d14;
-      border: 1px solid #2a2a3e;
+      background: #0a0a10;
+      border: 1px solid #22222f;
       border-radius: 8px;
-      padding: 11px 13px;
-      color: #e8e6f0;
+      padding: 10px 12px;
+      color: #eeeaff;
       font-size: 0.95rem;
       font-family: sans-serif;
       transition: border-color 0.2s;
     }
 
-    input:focus { outline: none; border-color: #e8b84b; }
+    input::placeholder { color: #2e2e44; }
+    input:focus { outline: none; border-color: #8b7fdf; }
 
-    button {
-      margin-top: 20px;
-      background: #e8b84b;
-      color: #0d0d14;
+    .add-btn {
+      margin-top: 16px;
+      width: 100%;
+      background: #eeeaff;
+      color: #0e0e14;
       border: none;
-      border-radius: 8px;
-      padding: 11px 26px;
+      border-radius: 10px;
+      padding: 12px;
       font-size: 0.95rem;
-      font-weight: 700;
+      font-weight: 800;
       font-family: sans-serif;
+      letter-spacing: 0.3px;
       cursor: pointer;
       transition: background 0.2s;
     }
 
-    button:hover:not(:disabled) { background: #f5cc6a; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .add-btn:hover:not(:disabled) { background: #ffffff; }
+    .add-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .error { margin-top: 10px; color: #e05c5c; font-size: 0.85rem; font-family: sans-serif; }
-
-    .count {
-      font-family: sans-serif;
-      font-size: 0.75rem;
-      color: #555570;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
+    .error {
+      margin-top: 10px;
+      color: #e05c7a;
+      font-size: 0.82rem;
     }
 
+    /* ── Story count ── */
+    .count {
+      font-size: 0.7rem;
+      color: #3e3e58;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* ── Story list ── */
     ul { list-style: none; }
 
     li {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      padding: 14px 18px;
-      border-radius: 8px;
-      border: 1px solid #1e1e2e;
-      margin-bottom: 8px;
-      background: #0f0f1a;
-      transition: background 0.15s;
+      gap: 12px;
+      padding: 15px 0;
+      border-bottom: 1px solid #1a1a26;
     }
 
-    li:hover { background: #15151f; }
+    li:last-child { border-bottom: none; }
 
-    li a {
-      color: #7eb3f5;
+    .story-info { flex: 1; min-width: 0; }
+
+    .story-title {
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: 1rem;
+      font-weight: 700;
+      color: #eeeaff;
       text-decoration: none;
+      line-height: 1.4;
+      display: block;
+      margin-bottom: 5px;
     }
 
-    li a:hover { text-decoration: underline; }
+    .story-title:hover { color: #c8c0ff; }
+
+    .story-meta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .story-author {
+      font-family: Georgia, serif;
+      font-style: italic;
+      font-size: 0.82rem;
+      color: #8b7fdf;
+    }
+
+    .meta-dot {
+      font-size: 0.6rem;
+      color: #3e3e58;
+    }
+
+    .story-site {
+      font-size: 0.68rem;
+      color: #3e3e58;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
 
     .del {
+      flex-shrink: 0;
       background: none;
       border: none;
-      color: #444460;
+      color: #2e2e44;
       cursor: pointer;
-      font-size: 1rem;
-      padding: 4px 8px;
+      font-size: 0.9rem;
+      padding: 4px 6px;
       border-radius: 4px;
-      margin-top: 0;
+      margin-top: 2px;
       transition: color 0.15s, background 0.15s;
+      line-height: 1;
     }
 
-    .del:hover { color: #e05c5c; background: #2a1a1a; }
+    .del:hover { color: #e05c7a; background: #1e1018; }
 
+    /* ── Empty & loading states ── */
     .empty {
       text-align: center;
       padding: 48px 20px;
-      color: #444460;
-      font-family: sans-serif;
-      border: 1px dashed #222230;
+      color: #2e2e44;
+      border: 1px dashed #1a1a26;
       border-radius: 10px;
     }
 
-    .empty p:first-child { font-size: 2rem; margin-bottom: 10px; }
+    .empty-icon { font-size: 2rem; margin-bottom: 10px; }
+    .empty-msg  { font-size: 0.9rem; color: #3e3e58; }
 
     .loading {
       text-align: center;
       padding: 32px;
-      color: #555570;
-      font-family: sans-serif;
+      color: #3e3e58;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>My Story Log</h1>
-    <p class="subtitle">Add stories you've read. Saved to your database — available on any device.</p>
+
+    <div class="header">
+      <h1>My Story Log</h1>
+      <p class="subtitle" id="subtitle">Loading your stories…</p>
+    </div>
 
     <div class="card">
-      <label for="name">Story Name</label>
+      <label for="name">Story Title</label>
       <input type="text" id="name" placeholder="e.g. The Last Question" />
+
+      <label for="author">Author</label>
+      <input type="text" id="author" placeholder="e.g. Isaac Asimov" />
 
       <label for="link">Website Link</label>
       <input type="url" id="link" placeholder="https://..." />
 
-      <button id="addBtn" onclick="addStory()">+ Add Story</button>
+      <button class="add-btn" id="addBtn" onclick="addStory()">+ Add Story</button>
       <p class="error" id="error"></p>
     </div>
 
     <div id="count" class="count"></div>
     <ul id="list"><div class="loading">Loading your stories…</div></ul>
+
   </div>
 
   <script>
@@ -187,21 +250,24 @@
     async function loadStories() {
       const res = await fetch(`${BASE}`, { headers: HEADERS });
       const stories = await res.json();
+      // Fisher-Yates shuffle — randomise on every load
       for (let i = stories.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [stories[i], stories[j]] = [stories[j], stories[i]];
+        const j = Math.floor(Math.random() * (i + 1));
+        [stories[i], stories[j]] = [stories[j], stories[i]];
       }
       render(stories);
     }
 
     async function addStory() {
-      const name = document.getElementById("name").value.trim();
-      const link = document.getElementById("link").value.trim();
-      const error = document.getElementById("error");
-      const btn = document.getElementById("addBtn");
+      const name   = document.getElementById("name").value.trim();
+      const author = document.getElementById("author").value.trim();
+      const link   = document.getElementById("link").value.trim();
+      const error  = document.getElementById("error");
+      const btn    = document.getElementById("addBtn");
 
-      if (!name) { error.textContent = "Please enter a story name."; return; }
-      if (!link)  { error.textContent = "Please enter a website link."; return; }
+      if (!name)   { error.textContent = "Please enter a story title."; return; }
+      if (!author) { error.textContent = "Please enter an author name."; return; }
+      if (!link)   { error.textContent = "Please enter a website link."; return; }
       if (!link.startsWith("http")) { error.textContent = "Link must start with https://"; return; }
 
       error.textContent = "";
@@ -211,15 +277,16 @@
       const res = await fetch(BASE, {
         method: "POST",
         headers: { ...HEADERS, "Prefer": "return=representation" },
-        body: JSON.stringify({ name, link }),
+        body: JSON.stringify({ name, author, link }),
       });
 
       btn.disabled = false;
       btn.textContent = "+ Add Story";
 
       if (res.ok) {
-        document.getElementById("name").value = "";
-        document.getElementById("link").value = "";
+        document.getElementById("name").value   = "";
+        document.getElementById("author").value = "";
+        document.getElementById("link").value   = "";
         loadStories();
       } else {
         error.textContent = "Failed to save. Check your Supabase config.";
@@ -247,23 +314,31 @@
     function render(stories) {
       const list  = document.getElementById("list");
       const count = document.getElementById("count");
+      const sub   = document.getElementById("subtitle");
 
-      count.textContent = stories.length
-        ? `${stories.length} ${stories.length === 1 ? "story" : "stories"}`
-        : "";
+      const n = stories.length;
+      sub.textContent   = n ? `${n} ${n === 1 ? "story" : "stories"} · shuffled on load` : "No stories yet";
+      count.textContent = "";
 
-      if (!stories.length) {
+      if (!n) {
         list.innerHTML = `
           <div class="empty">
-            <p>📖</p>
-            <p>No stories yet. Add your first one above.</p>
+            <div class="empty-icon">📖</div>
+            <div class="empty-msg">No stories yet. Add your first one above.</div>
           </div>`;
         return;
       }
 
       list.innerHTML = stories.map(s => `
         <li>
-          <a href="${s.link}" target="_blank" rel="noopener noreferrer">${s.name}</a>
+          <div class="story-info">
+            <a class="story-title" href="${s.link}" target="_blank" rel="noopener noreferrer">${s.name}</a>
+            <div class="story-meta">
+              <span class="story-author">${s.author || ""}</span>
+              ${s.author && s.site ? `<span class="meta-dot">·</span>` : ""}
+              <span class="story-site">${s.site || ""}</span>
+            </div>
+          </div>
           <button class="del" onclick="deleteStory('${s.id}', this)" title="Remove">✕</button>
         </li>
       `).join("");
