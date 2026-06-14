@@ -18,10 +18,7 @@
       padding: 36px 20px 60px;
     }
 
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
+    .container { max-width: 600px; margin: 0 auto; }
 
     /* ── Header ── */
     .header {
@@ -53,7 +50,7 @@
       border: 1px solid #22222f;
       border-radius: 14px;
       padding: 20px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     label {
@@ -108,14 +105,46 @@
       font-size: 0.82rem;
     }
 
-    /* ── Story count ── */
-    .count {
-      font-size: 0.7rem;
-      color: #3e3e58;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      margin-bottom: 4px;
+    /* ── Search ── */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 20px;
     }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #3e3e58;
+    }
+
+    #search {
+      padding-left: 36px;
+      padding-right: 32px;
+      background: #13131c;
+      border-color: #22222f;
+    }
+
+    #search:focus { border-color: #8b7fdf; }
+
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #3e3e58;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 4px;
+      line-height: 1;
+      display: none;
+    }
+
+    .search-clear:hover { color: #eeeaff; }
 
     /* ── Story list ── */
     ul { list-style: none; }
@@ -160,10 +189,7 @@
       color: #8b7fdf;
     }
 
-    .meta-dot {
-      font-size: 0.6rem;
-      color: #3e3e58;
-    }
+    .meta-dot { font-size: 0.6rem; color: #3e3e58; }
 
     .story-site {
       display: inline-block;
@@ -234,15 +260,23 @@
       <p class="error" id="error"></p>
     </div>
 
-    <div id="count" class="count"></div>
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="search" placeholder="Search by title, author or source…" oninput="filterAndRender()" />
+      <button class="search-clear" id="clearBtn" onclick="clearSearch()" title="Clear search">✕</button>
+    </div>
+
+    <p class="subtitle" id="count" style="margin-bottom:12px;"></p>
     <ul id="list"><div class="loading">Loading your stories…</div></ul>
 
   </div>
 
   <script>
     // ─── PASTE YOUR SUPABASE DETAILS HERE ───────────────────────────
-    const SUPABASE_URL  = "https://rdjrwxwuyugmjsuvscsx.supabase.co";
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkanJ3eHd1eXVnbWpzdXZzY3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAzOTEsImV4cCI6MjA5NjQwNjM5MX0.2xm0WOMaelheQAI1_NGkLdgUTkohiiolwsDxHT1Z-aU";
+        const SUPABASE_URL  = "https://rdjrwxwuyugmjsuvscsx.supabase.co";
+        const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkanJ3eHd1eXVnbWpzdXZzY3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAzOTEsImV4cCI6MjA5NjQwNjM5MX0.2xm0WOMaelheQAI1_NGkLdgUTkohiiolwsDxHT1Z-aU";
     // ────────────────────────────────────────────────────────────────
 
     const BASE = `${SUPABASE_URL}/rest/v1/stories`;
@@ -252,17 +286,56 @@
       "Authorization": `Bearer ${SUPABASE_ANON}`,
     };
 
+    let allStories = []; // full list — never filtered, used as the source of truth
+
+    // ── Load from Supabase, shuffle, then display ──────────────────
     async function loadStories() {
       const res = await fetch(`${BASE}`, { headers: HEADERS });
-      const stories = await res.json();
+      allStories = await res.json();
+
       // Fisher-Yates shuffle — randomise on every load
-      for (let i = stories.length - 1; i > 0; i--) {
+      for (let i = allStories.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [stories[i], stories[j]] = [stories[j], stories[i]];
+        [allStories[i], allStories[j]] = [allStories[j], allStories[i]];
       }
-      render(stories);
+
+      filterAndRender(); // apply any active search term after load
     }
 
+    // ── Filter allStories by the search term, then render ─────────
+    function filterAndRender() {
+      const term     = document.getElementById("search").value.trim().toLowerCase();
+      const clearBtn = document.getElementById("clearBtn");
+
+      // Show ✕ button only when there is a search term
+      clearBtn.style.display = term ? "block" : "none";
+
+      if (!term) {
+        // No search — show everything
+        render(allStories, null);
+        return;
+      }
+
+      const filtered = allStories.filter(s => {
+        const domain = getDomain(s.link);
+        return (
+          (s.name   || "").toLowerCase().includes(term) ||
+          (s.author || "").toLowerCase().includes(term) ||
+          domain.toLowerCase().includes(term)
+        );
+      });
+
+      render(filtered, allStories.length); // pass total so subtitle can show "X of Y"
+    }
+
+    // ── Clear the search box and show all stories again ───────────
+    function clearSearch() {
+      document.getElementById("search").value = "";
+      filterAndRender();
+      document.getElementById("search").focus();
+    }
+
+    // ── Add a new story to Supabase ───────────────────────────────
     async function addStory() {
       const name   = document.getElementById("name").value.trim();
       const author = document.getElementById("author").value.trim();
@@ -298,6 +371,7 @@
       }
     }
 
+    // ── Delete with two-tap confirmation ──────────────────────────
     async function deleteStory(id, btn) {
       // First tap — ask for confirmation
       if (btn.dataset.confirm !== "true") {
@@ -336,25 +410,45 @@
       }
     }
 
+    // ── Extract domain from a URL ─────────────────────────────────
     function getDomain(url) {
       try { return new URL(url).hostname.replace(/^www\./, ""); }
       catch { return ""; }
     }
 
-    function render(stories) {
-      const list  = document.getElementById("list");
-      const count = document.getElementById("count");
-      const sub   = document.getElementById("subtitle");
+    // ── Render the story list ─────────────────────────────────────
+    // stories  = array to display (may be filtered)
+    // total    = full count before filtering (null means no filter active)
+    function render(stories, total) {
+      const list = document.getElementById("list");
+      const sub  = document.getElementById("subtitle");
+      const cnt  = document.getElementById("count");
 
       const n = stories.length;
-      sub.textContent   = n ? `${n} ${n === 1 ? "story" : "stories"} · shuffled on load` : "No stories yet";
-      count.textContent = "";
+
+      // Update header subtitle
+      sub.textContent = total !== null
+        ? `${allStories.length} ${allStories.length === 1 ? "story" : "stories"} · shuffled on load`
+        : `${n} ${n === 1 ? "story" : "stories"} · shuffled on load`;
+
+      // Update count line below search box
+      if (total !== null) {
+        // Search is active — show "X of Y results"
+        cnt.textContent = n
+          ? `${n} of ${total} ${total === 1 ? "story" : "stories"}`
+          : `No results for that search`;
+      } else {
+        cnt.textContent = "";
+      }
 
       if (!n) {
+        const msg = total !== null
+          ? "No stories match your search."
+          : "No stories yet. Add your first one above.";
         list.innerHTML = `
           <div class="empty">
             <div class="empty-icon">📖</div>
-            <div class="empty-msg">No stories yet. Add your first one above.</div>
+            <div class="empty-msg">${msg}</div>
           </div>`;
         return;
       }
@@ -376,8 +470,9 @@
       }).join("");
     }
 
+    // Enter key triggers addStory only when focus is NOT on the search box
     document.addEventListener("keydown", e => {
-      if (e.key === "Enter") addStory();
+      if (e.key === "Enter" && document.activeElement.id !== "search") addStory();
     });
 
     loadStories();
