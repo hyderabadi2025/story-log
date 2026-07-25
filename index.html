@@ -105,6 +105,13 @@
       font-size: 0.82rem;
     }
 
+    .fetch-status {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: #3e3e58;
+      min-height: 1rem;
+    }
+
     /* ── Search ── */
     .search-wrap {
       position: relative;
@@ -236,6 +243,98 @@
       padding: 32px;
       color: #3e3e58;
     }
+
+    /* ── Embedding Tools panel ── */
+    .tools-section {
+      margin-top: 48px;
+      border-top: 1px solid #1a1a26;
+      padding-top: 20px;
+    }
+
+    .tools-toggle {
+      width: 100%;
+      background: none;
+      border: 1px solid #22222f;
+      border-radius: 8px;
+      color: #3e3e58;
+      font-size: 0.72rem;
+      font-family: sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      text-align: left;
+    }
+
+    .tools-toggle:hover { color: #eeeaff; border-color: #3e3e58; }
+
+    .tools-panel {
+      display: none;
+      margin-top: 16px;
+      background: #13131c;
+      border: 1px solid #22222f;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .tools-panel.open { display: block; }
+
+    .embed-count {
+      font-size: 0.72rem;
+      color: #3e3e58;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .embed-count span { color: #8b7fdf; font-weight: 700; }
+
+    .progress-wrap {
+      background: #0a0a10;
+      border-radius: 20px;
+      height: 5px;
+      margin: 14px 0 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #6b5fd4, #8b7fdf);
+      border-radius: 20px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .embed-status {
+      font-size: 0.78rem;
+      color: #3e3e58;
+      min-height: 1.2rem;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .embed-status.success { color: #4caf87; }
+    .embed-status.error   { color: #e05c7a; }
+    .embed-status.warn    { color: #e8a84b; }
+
+    .embed-btn {
+      width: 100%;
+      background: #1a1a2e;
+      color: #8b7fdf;
+      border: 1px solid #2a2a44;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      font-family: sans-serif;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .embed-btn:hover:not(:disabled) { background: #22223a; color: #c8c0ff; }
+    .embed-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -254,7 +353,8 @@
       <input type="text" id="author" placeholder="e.g. Isaac Asimov" />
 
       <label for="link">Website Link</label>
-      <input type="url" id="link" placeholder="https://..." />
+      <input type="url" id="link" placeholder="https://..." onblur="fetchMeta()" />
+      <p class="fetch-status" id="fetchStatus"></p>
 
       <button class="add-btn" id="addBtn" onclick="addStory()">+ Add Story</button>
       <p class="error" id="error"></p>
@@ -271,12 +371,41 @@
     <p class="subtitle" id="count" style="margin-bottom:12px;"></p>
     <ul id="list"><div class="loading">Loading your stories…</div></ul>
 
+    <!-- ── Embedding Tools ── -->
+    <div class="tools-section">
+      <button class="tools-toggle" onclick="toggleTools()">⚙ Embedding Tools</button>
+      <div class="tools-panel" id="toolsPanel">
+
+        <p class="embed-count" id="embedCount">Checking…</p>
+
+        <label for="jinaKey">
+          Jina API Key
+          <a href="https://jina.ai" target="_blank" rel="noopener"
+            style="color:#8b7fdf; text-transform:none; letter-spacing:0; font-size:0.75rem; margin-left:6px;">
+            Get free key →
+          </a>
+        </label>
+        <input type="password" id="jinaKey" placeholder="jina_…" />
+
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <p class="embed-status" id="embedStatus"></p>
+
+        <button class="embed-btn" id="embedBtn" onclick="startBatchEmbed()">
+          Embed next 10 stories
+        </button>
+
+      </div>
+    </div>
+
   </div>
 
   <script>
     // ─── PASTE YOUR SUPABASE DETAILS HERE ───────────────────────────
-        const SUPABASE_URL  = "https://rdjrwxwuyugmjsuvscsx.supabase.co";
-        const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkanJ3eHd1eXVnbWpzdXZzY3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAzOTEsImV4cCI6MjA5NjQwNjM5MX0.2xm0WOMaelheQAI1_NGkLdgUTkohiiolwsDxHT1Z-aU";
+    const SUPABASE_URL  = "https://rdjrwxwuyugmjsuvscsx.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkanJ3eHd1eXVnbWpzdXZzY3N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MzAzOTEsImV4cCI6MjA5NjQwNjM5MX0.2xm0WOMaelheQAI1_NGkLdgUTkohiiolwsDxHT1Z-aU";
     // ────────────────────────────────────────────────────────────────
 
     const BASE = `${SUPABASE_URL}/rest/v1/stories`;
@@ -286,35 +415,30 @@
       "Authorization": `Bearer ${SUPABASE_ANON}`,
     };
 
-    let allStories = []; // full list — never filtered, used as the source of truth
+    let allStories = [];
 
     // ── Load from Supabase, shuffle, then display ──────────────────
     async function loadStories() {
-      const res = await fetch(`${BASE}`, { headers: HEADERS });
+      const res = await fetch(`${BASE}?select=id,name,author,link`, { headers: HEADERS });
       allStories = await res.json();
 
-      // Fisher-Yates shuffle — randomise on every load
+      // Fisher-Yates shuffle
       for (let i = allStories.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [allStories[i], allStories[j]] = [allStories[j], allStories[i]];
       }
 
-      filterAndRender(); // apply any active search term after load
+      filterAndRender();
     }
 
-    // ── Filter allStories by the search term, then render ─────────
+    // ── Filter by search term, then render ────────────────────────
     function filterAndRender() {
       const term     = document.getElementById("search").value.trim().toLowerCase();
       const clearBtn = document.getElementById("clearBtn");
 
-      // Show ✕ button only when there is a search term
       clearBtn.style.display = term ? "block" : "none";
 
-      if (!term) {
-        // No search — show everything
-        render(allStories, null);
-        return;
-      }
+      if (!term) { render(allStories, null); return; }
 
       const filtered = allStories.filter(s => {
         const domain = getDomain(s.link);
@@ -325,14 +449,48 @@
         );
       });
 
-      render(filtered, allStories.length); // pass total so subtitle can show "X of Y"
+      render(filtered, allStories.length);
     }
 
-    // ── Clear the search box and show all stories again ───────────
+    // ── Clear search ───────────────────────────────────────────────
     function clearSearch() {
       document.getElementById("search").value = "";
       filterAndRender();
       document.getElementById("search").focus();
+    }
+
+    // ── Auto-fill title & author from URL via Microlink ───────────
+    async function fetchMeta() {
+      const link   = document.getElementById("link").value.trim();
+      const status = document.getElementById("fetchStatus");
+
+      if (!link.startsWith("http")) return;
+      if (document.getElementById("name").value.trim()) return;
+
+      status.textContent = "Fetching page details…";
+
+      try {
+        const res  = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(link)}`);
+        const data = await res.json();
+
+        if (data.status !== "success") {
+          status.textContent = "Couldn't fetch details — fill in manually.";
+          return;
+        }
+
+        const { title, author, publisher } = data.data;
+        if (title)           document.getElementById("name").value   = title;
+        if (author)          document.getElementById("author").value = author;
+        else if (publisher)  document.getElementById("author").value = publisher;
+
+        status.textContent = title
+          ? "✓ Details filled in — edit if needed."
+          : "No metadata found — fill in manually.";
+
+        setTimeout(() => { status.textContent = ""; }, 3000);
+      } catch {
+        status.textContent = "Couldn't fetch details — fill in manually.";
+      }
     }
 
     // ── Add a new story to Supabase ───────────────────────────────
@@ -373,12 +531,10 @@
 
     // ── Delete with two-tap confirmation ──────────────────────────
     async function deleteStory(id, btn) {
-      // First tap — ask for confirmation
       if (btn.dataset.confirm !== "true") {
         btn.dataset.confirm = "true";
         btn.textContent = "Delete?";
         btn.style.color = "#e05c7a";
-        // Auto-reset after 3 seconds if user changes their mind
         setTimeout(() => {
           if (btn.dataset.confirm === "true") {
             btn.dataset.confirm = "";
@@ -389,7 +545,6 @@
         return;
       }
 
-      // Second tap — confirmed, proceed
       btn.dataset.confirm = "";
       btn.disabled = true;
       btn.textContent = "…";
@@ -410,46 +565,30 @@
       }
     }
 
-    // ── Extract domain from a URL ─────────────────────────────────
+    // ── Extract domain from URL ────────────────────────────────────
     function getDomain(url) {
       try { return new URL(url).hostname.replace(/^www\./, ""); }
       catch { return ""; }
     }
 
     // ── Render the story list ─────────────────────────────────────
-    // stories  = array to display (may be filtered)
-    // total    = full count before filtering (null means no filter active)
     function render(stories, total) {
       const list = document.getElementById("list");
       const sub  = document.getElementById("subtitle");
       const cnt  = document.getElementById("count");
+      const n    = stories.length;
 
-      const n = stories.length;
+      sub.textContent = `${allStories.length} ${allStories.length === 1 ? "story" : "stories"} · shuffled on load`;
 
-      // Update header subtitle
-      sub.textContent = total !== null
-        ? `${allStories.length} ${allStories.length === 1 ? "story" : "stories"} · shuffled on load`
-        : `${n} ${n === 1 ? "story" : "stories"} · shuffled on load`;
-
-      // Update count line below search box
       if (total !== null) {
-        // Search is active — show "X of Y results"
-        cnt.textContent = n
-          ? `${n} of ${total} ${total === 1 ? "story" : "stories"}`
-          : `No results for that search`;
+        cnt.textContent = n ? `${n} of ${total} ${total === 1 ? "story" : "stories"}` : "No results for that search";
       } else {
         cnt.textContent = "";
       }
 
       if (!n) {
-        const msg = total !== null
-          ? "No stories match your search."
-          : "No stories yet. Add your first one above.";
-        list.innerHTML = `
-          <div class="empty">
-            <div class="empty-icon">📖</div>
-            <div class="empty-msg">${msg}</div>
-          </div>`;
+        const msg = total !== null ? "No stories match your search." : "No stories yet. Add your first one above.";
+        list.innerHTML = `<div class="empty"><div class="empty-icon">📖</div><div class="empty-msg">${msg}</div></div>`;
         return;
       }
 
@@ -470,7 +609,237 @@
       }).join("");
     }
 
-    // Enter key triggers addStory only when focus is NOT on the search box
+    // ── Embedding Tools ───────────────────────────────────────────
+
+    function toggleTools() {
+      const panel = document.getElementById("toolsPanel");
+      panel.classList.toggle("open");
+      // Restore saved API key and refresh count when opening
+      if (panel.classList.contains("open")) {
+        const saved = localStorage.getItem("jinaKey");
+        if (saved) document.getElementById("jinaKey").value = saved;
+        refreshEmbedCount();
+      }
+    }
+
+    // Show how many stories have been embedded so far
+    async function refreshEmbedCount() {
+      document.getElementById("embedCount").innerHTML = "Checking…";
+      try {
+        const res = await fetch(`${BASE}?select=id&embedding=not.is.null`, { headers: HEADERS });
+        const embedded = await res.json();
+        const n     = embedded.length;
+        const total = allStories.length;
+        document.getElementById("embedCount").innerHTML =
+          `<span>${n}</span> of <span>${total}</span> stories embedded`;
+      } catch {
+        document.getElementById("embedCount").textContent = "Could not fetch count.";
+      }
+    }
+
+    // Main batch embedding function — processes 10 unembedded stories
+    async function startBatchEmbed() {
+      const keyInput = document.getElementById("jinaKey");
+      const key = keyInput.value.trim() || localStorage.getItem("jinaKey");
+
+      if (!key) { setEmbedStatus("Please enter your Jina API key.", "error"); return; }
+
+      localStorage.setItem("jinaKey", key);
+      keyInput.value = key;
+
+      // Fetch up to 10 stories that have no embedding yet, oldest first
+      const res = await fetch(
+        `${BASE}?select=id,name,link&embedding=is.null&order=id.asc&limit=10`,
+        { headers: HEADERS }
+      );
+      const stories = await res.json();
+
+      if (!stories.length) {
+        setEmbedStatus("All stories are already embedded!", "success");
+        return;
+      }
+
+      const progressWrap = document.getElementById("progressWrap");
+      const embedBtn     = document.getElementById("embedBtn");
+      progressWrap.style.display = "block";
+      embedBtn.disabled = true;
+
+      let done = 0, failed = 0;
+      const total = stories.length;
+
+      for (const story of stories) {
+        setEmbedStatus(`Processing (${done + failed + 1}/${total}): ${story.name}`);
+        updateProgress(done + failed, total);
+
+        try {
+          // Step 1 — fetch full story text via Jina Reader
+          const content = await fetchStoryContent(story.link);
+          if (!content) throw new Error("Empty content returned");
+
+          // Step 2 — convert first 10,000 chars to embedding vector
+          // (captures story themes without hitting token limits)
+          const embedding = await getEmbedding(content.slice(0, 10000), key);
+          if (!embedding) throw new Error("Embedding API returned nothing");
+
+          // Step 3 — save full content + embedding to Supabase
+          await saveEmbedding(story.id, content, embedding);
+          done++;
+        } catch (e) {
+          console.warn(`Skipped "${story.name}":`, e.message);
+          failed++;
+        }
+
+        // Wait 2s between requests — stays well within Jina's free rate limits
+        await sleep(2000);
+      }
+
+      updateProgress(total, total);
+      setEmbedStatus(
+        `Done — ${done} embedded${failed ? `, ${failed} skipped (check console for details)` : ""}.`,
+        failed === total ? "error" : failed ? "warn" : "success"
+      );
+
+      embedBtn.disabled = false;
+      refreshEmbedCount();
+    }
+
+    // Jina Reader: fetch story across multiple pages if paginated
+    async function fetchStoryContent(url) {
+      let allContent  = "";
+      let currentUrl  = url;
+      const maxPages  = 5;           // safety cap — won't fetch more than 5 pages per story
+      const visited   = new Set();   // prevents infinite loops on circular links
+
+      for (let page = 1; page <= maxPages; page++) {
+        if (!currentUrl || visited.has(currentUrl)) break;
+        visited.add(currentUrl);
+
+        // Fetch in Jina's default markdown mode (not plain text)
+        // so we can read the links and detect pagination
+        const res = await fetch(`https://r.jina.ai/${currentUrl}`, {
+          headers: { "X-No-Cache": "true" }
+        });
+        if (!res.ok) break;
+
+        const markdown = await res.text();
+
+        // If the page returned almost nothing, it's likely a 404 or error page — stop
+        if (!markdown || markdown.length < 400) break;
+
+        // Strip markdown formatting to get clean readable text for storage + embedding
+        // [link text](url) → link text | remove images | remove heading markers
+        const clean = markdown
+          .replace(/!\[[^\]]*\]\([^)]+\)/g, "")         // remove images
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")       // [text](url) → text
+          .replace(/^#{1,6}\s+/gm, "")                   // remove ## headings
+          .trim();
+
+        allContent += (page > 1 ? "\n\n---\n\n" : "") + clean;
+
+        // Find the next page using the raw markdown (which still has links intact)
+        currentUrl = findNextPage(markdown, currentUrl);
+
+        // 1.5s between page fetches — separate from the 2s between stories
+        if (currentUrl) await sleep(1500);
+      }
+
+      if (!allContent) return null;
+
+      // Store up to 20,000 chars in the DB (covers most multi-page stories)
+      // Embedding uses first 10,000 chars — well within Jina's token limit
+      return allContent.slice(0, 20000).trim();
+    }
+
+    // Detect the next page URL using two methods
+    function findNextPage(markdown, currentUrl) {
+      let baseHostname;
+      try { baseHostname = new URL(currentUrl).hostname; }
+      catch { return null; }
+
+      // ── Method 1: scan Jina's markdown for explicit "next page" links ──
+      // Jina renders HTML links as [visible text](href)
+      // We match link text containing next/continue/→/chapter N etc.
+      const nextTextPattern = /\[([^\]]*(?:next|continue|→|»|›|chapter\s*\d+|part\s*\d+)[^\]]*)\]\((https?:\/\/[^\s)]+)\)/gi;
+      let match;
+      while ((match = nextTextPattern.exec(markdown)) !== null) {
+        try {
+          const link = new URL(match[2]);
+          if (link.hostname === baseHostname) return match[2]; // same-domain only
+        } catch {}
+      }
+
+      // ── Method 2: auto-increment common URL pagination patterns ──
+      try {
+        const base = new URL(currentUrl);
+
+        // Pattern A: ?page=1 → ?page=2
+        const pageParam = base.searchParams.get("page");
+        if (pageParam && !isNaN(pageParam)) {
+          base.searchParams.set("page", parseInt(pageParam) + 1);
+          return base.toString();
+        }
+
+        // Pattern B: /page/1/ → /page/2/
+        const pagePathMatch = base.pathname.match(/\/page\/(\d+)/);
+        if (pagePathMatch) {
+          return currentUrl.replace(
+            `/page/${pagePathMatch[1]}`,
+            `/page/${parseInt(pagePathMatch[1]) + 1}`
+          );
+        }
+      } catch {}
+
+      return null; // no next page found — this was the last page
+    }
+
+    // Jina Embeddings: convert text → array of 768 numbers
+    async function getEmbedding(text, key) {
+      const res = await fetch("https://api.jina.ai/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: "jina-embeddings-v2-base-en", // 768 dimensions — matches our vector(768) column
+          input: [text],
+        }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.data[0].embedding;
+    }
+
+    // Save content + embedding vector to Supabase
+    // content = full multi-page text (up to 20,000 chars)
+    // embedding is generated from first 10,000 chars only (embedding API limit)
+    async function saveEmbedding(id, content, embedding) {
+      const res = await fetch(`${BASE}?id=eq.${id}`, {
+        method: "PATCH",
+        headers: { ...HEADERS, "Prefer": "return=minimal" },
+        body: JSON.stringify({
+          content,
+          embedding: `[${embedding.join(",")}]`, // Supabase expects vector as a string
+        }),
+      });
+      if (!res.ok) throw new Error("Supabase PATCH failed");
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function updateProgress(done, total) {
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById("progressBar").style.width = `${pct}%`;
+    }
+
+    function setEmbedStatus(msg, type) {
+      const el = document.getElementById("embedStatus");
+      el.textContent = msg;
+      el.className = `embed-status ${type || ""}`.trim();
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // Enter key triggers addStory only when focus is NOT on search box
     document.addEventListener("keydown", e => {
       if (e.key === "Enter" && document.activeElement.id !== "search") addStory();
     });
