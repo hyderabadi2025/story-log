@@ -801,7 +801,9 @@
           "Authorization": `Bearer ${key}`,
         },
         body: JSON.stringify({
-          model: "jina-embeddings-v2-base-en", // 768 dimensions — matches our vector(768) column
+          model: "jina-embeddings-v3",
+          task: "text-matching",  // tells the model this is for similarity comparison
+          dimensions: 768,        // keeps our existing vector(768) column compatible
           input: [text],
         }),
       });
