@@ -226,6 +226,161 @@
 
     .del:hover { color: #e05c7a; background: #1e1018; }
 
+    /* ── Find Similar button ── */
+    .sim-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #3a3a60;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1;
+    }
+
+    .sim-btn:hover { color: #8b7fdf; background: #1a1a2e; }
+
+    /* ── Similar stories panel (slides up from bottom) ── */
+    .sim-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+    }
+
+    .sim-overlay.open { display: block; }
+
+    .sim-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 72vh;
+      background: #13131c;
+      border-radius: 16px 16px 0 0;
+      border-top: 1px solid #22222f;
+      border-left: 1px solid #22222f;
+      border-right: 1px solid #22222f;
+      overflow-y: auto;
+      z-index: 101;
+      padding: 20px 20px 40px;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+    }
+
+    .sim-panel.open { transform: translateY(0); }
+
+    .sim-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #1a1a26;
+    }
+
+    .sim-header-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #eeeaff;
+      line-height: 1.4;
+    }
+
+    .sim-label {
+      font-size: 0.68rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #3e3e58;
+      font-family: sans-serif;
+      margin-bottom: 4px;
+    }
+
+    .sim-close {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #3e3e58;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+
+    .sim-close:hover { color: #eeeaff; }
+
+    .sim-result {
+      padding: 14px 0;
+      border-bottom: 1px solid #1a1a26;
+    }
+
+    .sim-result:last-child { border-bottom: none; }
+
+    .sim-score {
+      display: inline-block;
+      font-size: 0.62rem;
+      font-family: sans-serif;
+      font-weight: 700;
+      color: #8b7fdf;
+      background: #1a1a2e;
+      border: 1px solid #2a2a44;
+      border-radius: 20px;
+      padding: 2px 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .sim-empty, .sim-loading {
+      text-align: center;
+      padding: 36px 16px;
+      color: #3e3e58;
+      font-family: sans-serif;
+      font-size: 0.88rem;
+      line-height: 1.7;
+    }
+
+    /* ── Discovery Scanner results ── */
+    .scan-result {
+      padding: 16px 0;
+      border-bottom: 1px solid #1a1a26;
+    }
+
+    .scan-result:last-child { border-bottom: none; }
+
+    .scan-match-label {
+      font-size: 0.78rem;
+      color: #44445a;
+      font-family: sans-serif;
+      margin: 6px 0 10px;
+      line-height: 1.4;
+    }
+
+    .scan-match-label em {
+      color: #8b7fdf;
+      font-style: normal;
+    }
+
+    .scan-add-btn {
+      background: none;
+      border: 1px solid #2a2a44;
+      border-radius: 7px;
+      color: #8b7fdf;
+      font-family: sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .scan-add-btn:hover { background: #1a1a2e; color: #c8c0ff; }
+
     /* ── Empty & loading states ── */
     .empty {
       text-align: center;
@@ -371,6 +526,19 @@
     <p class="subtitle" id="count" style="margin-bottom:12px;"></p>
     <ul id="list"><div class="loading">Loading your stories…</div></ul>
 
+    <!-- ── Find Similar panel ── -->
+    <div class="sim-overlay" id="simOverlay" onclick="closePanel()"></div>
+    <div class="sim-panel" id="simPanel">
+      <div class="sim-header">
+        <div>
+          <p class="sim-label">Similar to</p>
+          <span class="sim-header-title" id="simTitle"></span>
+        </div>
+        <button class="sim-close" onclick="closePanel()" title="Close">✕</button>
+      </div>
+      <div id="simResults"></div>
+    </div>
+
     <!-- ── Embedding Tools ── -->
     <div class="tools-section">
       <button class="tools-toggle" onclick="toggleTools()">⚙ Embedding Tools</button>
@@ -396,6 +564,43 @@
         <button class="embed-btn" id="embedBtn" onclick="startBatchEmbed()">
           Embed next 10 stories
         </button>
+
+      </div>
+    </div>
+
+    <!-- ── Discovery Scanner ── -->
+    <div class="tools-section">
+      <button class="tools-toggle" onclick="toggleScanner()">🔍 Discovery Scanner</button>
+      <div class="tools-panel" id="scannerPanel">
+
+        <p class="embed-count" style="margin-bottom:14px;">
+          Paste a story listing page URL. The scanner fetches each story on it,
+          compares it against your library, and shows only the ones that match your taste.
+        </p>
+
+        <label for="jinaKeyScanner">
+          Jina API Key
+          <a href="https://jina.ai" target="_blank" rel="noopener"
+            style="color:#8b7fdf; text-transform:none; letter-spacing:0; font-size:0.75rem; margin-left:6px;">
+            Get free key →
+          </a>
+        </label>
+        <input type="password" id="jinaKeyScanner" placeholder="jina_…" />
+
+        <label for="scanUrl" style="margin-top:14px;">Listing page URL</label>
+        <input type="url" id="scanUrl" placeholder="https://site.com/new-stories" />
+
+        <div class="progress-wrap" id="scanProgressWrap">
+          <div class="progress-bar" id="scanProgressBar"></div>
+        </div>
+
+        <p class="embed-status" id="scanStatus"></p>
+
+        <button class="embed-btn" id="scanBtn" onclick="startDiscoveryScan()">
+          Scan for similar stories
+        </button>
+
+        <div id="scanResults"></div>
 
       </div>
     </div>
@@ -604,9 +809,103 @@
               ${domain ? `<span class="story-site">${domain}</span>` : ""}
             </div>
           </div>
+          <button class="sim-btn" onclick="findSimilar(${s.id}, this)" title="Find similar stories">≈</button>
           <button class="del" onclick="deleteStory('${s.id}', this)" title="Remove">✕</button>
         </li>`;
       }).join("");
+    }
+
+    // ── Find Similar ──────────────────────────────────────────────
+    async function findSimilar(id, btn) {
+      // Get story name from the in-memory list (no extra DB call needed)
+      const story = allStories.find(s => s.id === id);
+      const name  = story ? story.name : `Story #${id}`;
+
+      openPanel(name, '<p class="sim-loading">Searching your collection…</p>');
+
+      try {
+        // Step 1 — fetch only the embedding for this story
+        const storyRes = await fetch(
+          `${BASE}?id=eq.${id}&select=id,embedding`,
+          { headers: HEADERS }
+        );
+        const rows = await storyRes.json();
+        const row  = rows[0];
+
+        if (!row || !row.embedding) {
+          openPanel(name, '<p class="sim-empty">This story has no embedding yet.<br>Run ⚙ Embedding Tools first.</p>');
+          return;
+        }
+
+        // Supabase returns vector as a JS array — convert to string for RPC
+        const embStr = Array.isArray(row.embedding)
+          ? `[${row.embedding.join(",")}]`
+          : row.embedding;
+
+        // Step 2 — call the match_stories Postgres function
+        const rpcRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/rpc/match_stories`,
+          {
+            method: "POST",
+            headers: HEADERS,
+            body: JSON.stringify({
+              query_embedding:  embStr,
+              match_threshold:  0.6,  // lower = more results, higher = stricter
+              match_count:      5,
+              exclude_id:       id,
+            }),
+          }
+        );
+        const matches = await rpcRes.json();
+
+        // Guard: Supabase returns an error object when something goes wrong
+        if (!Array.isArray(matches)) {
+          console.error("match_stories RPC error:", matches);
+          openPanel(name, `<p class="sim-empty">RPC error: ${matches.message || "Unknown error"}<br>Check console for details.</p>`);
+          return;
+        }
+
+        if (!matches.length) {
+          openPanel(name, '<p class="sim-empty">No close matches found yet.<br>Try embedding more stories — the more you embed, the better the results.</p>');
+          return;
+        }
+
+        // Step 3 — render results
+        const html = matches.map(m => {
+          const domain = getDomain(m.link);
+          const pct    = Math.round(m.score * 100);
+          return `
+            <div class="sim-result">
+              <a class="story-title" href="${m.link}" target="_blank" rel="noopener noreferrer">${m.name}</a>
+              <div class="story-meta">
+                <span class="story-author">${m.author || ""}</span>
+                ${m.author && domain ? `<span class="meta-dot">·</span>` : ""}
+                ${domain ? `<span class="story-site">${domain}</span>` : ""}
+                <span class="sim-score">${pct}% match</span>
+              </div>
+            </div>`;
+        }).join("");
+
+        openPanel(name, html);
+
+      } catch(e) {
+        console.error("findSimilar error:", e);
+        openPanel(name, '<p class="sim-empty">Something went wrong — check the console.</p>');
+      }
+    }
+
+    function openPanel(title, html) {
+      document.getElementById("simTitle").textContent   = title;
+      document.getElementById("simResults").innerHTML   = html;
+      document.getElementById("simPanel").classList.add("open");
+      document.getElementById("simOverlay").classList.add("open");
+      document.body.style.overflow = "hidden"; // prevent background scroll on mobile
+    }
+
+    function closePanel() {
+      document.getElementById("simPanel").classList.remove("open");
+      document.getElementById("simOverlay").classList.remove("open");
+      document.body.style.overflow = "";
     }
 
     // ── Embedding Tools ───────────────────────────────────────────
@@ -917,7 +1216,207 @@
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // Enter key triggers addStory only when focus is NOT on search box
+    // ── Discovery Scanner ──────────────────────────────────────────
+
+    function toggleScanner() {
+      const panel = document.getElementById("scannerPanel");
+      panel.classList.toggle("open");
+      // Restore saved Jina key when opening
+      if (panel.classList.contains("open")) {
+        const saved = localStorage.getItem("jinaKey");
+        if (saved) document.getElementById("jinaKeyScanner").value = saved;
+      }
+    }
+
+    async function startDiscoveryScan() {
+      const keyInput = document.getElementById("jinaKeyScanner");
+      const key      = keyInput.value.trim() || localStorage.getItem("jinaKey");
+      const pageUrl  = document.getElementById("scanUrl").value.trim();
+      const btn      = document.getElementById("scanBtn");
+
+      if (!key)     { setScanStatus("Please enter your Jina API key.", "error"); return; }
+      if (!pageUrl) { setScanStatus("Please enter a listing page URL.", "error"); return; }
+      if (!pageUrl.startsWith("http")) { setScanStatus("URL must start with https://", "error"); return; }
+
+      localStorage.setItem("jinaKey", key);
+      keyInput.value = key;
+
+      btn.disabled = true;
+      document.getElementById("scanResults").innerHTML = "";
+      document.getElementById("scanProgressWrap").style.display = "block";
+      updateScanProgress(0, 1);
+      setScanStatus("Fetching listing page…");
+
+      try {
+        // Step 1 — fetch the listing page via Jina Reader
+        const listRes = await fetch(`https://r.jina.ai/${pageUrl}`, {
+          headers: { "X-No-Cache": "true" }
+        });
+        if (!listRes.ok) throw new Error("Jina could not fetch the listing page");
+        const markdown = await listRes.text();
+
+        // Step 2 — extract candidate story links
+        const candidates = extractCandidateLinks(markdown, pageUrl).slice(0, 20); // cap at 20
+        if (!candidates.length) {
+          setScanStatus("No story links found on that page. Try a different URL.", "error");
+          btn.disabled = false;
+          return;
+        }
+
+        setScanStatus(`Found ${candidates.length} links — fetching and scoring each…`);
+
+        const shortlist = [];
+
+        for (let i = 0; i < candidates.length; i++) {
+          const candidate = candidates[i];
+          updateScanProgress(i, candidates.length);
+          setScanStatus(`Checking ${i + 1} of ${candidates.length}: ${getDomain(candidate.url)}`);
+
+          try {
+            // Step 3a — fetch full story content (reuses existing series/single-page logic)
+            const content = await fetchStoryContent(candidate.url);
+            if (!content || content.length < 500) { await sleep(1500); continue; }
+
+            // Step 3b — convert content to embedding vector
+            const embedding = await getEmbedding(content.slice(0, 10000), key);
+            if (!embedding) { await sleep(1500); continue; }
+
+            const embStr = `[${embedding.join(",")}]`;
+
+            // Step 3c — compare against every story in your library
+            // match_count=1 returns only the single best match
+            // exclude_id=0 means nothing is excluded (no real story has id=0)
+            const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/match_stories`, {
+              method: "POST",
+              headers: HEADERS,
+              body: JSON.stringify({
+                query_embedding:  embStr,
+                match_threshold:  0.65,
+                match_count:      1,
+                exclude_id:       0,
+              }),
+            });
+            const matches = await rpcRes.json();
+
+            if (Array.isArray(matches) && matches.length) {
+              shortlist.push({
+                url:           candidate.url,
+                text:          candidate.text,
+                score:         matches[0].score,
+                matchedName:   matches[0].name,
+                matchedAuthor: matches[0].author,
+              });
+            }
+          } catch(e) {
+            console.warn(`Skipped ${candidate.url}:`, e.message);
+          }
+
+          // 2 seconds between stories — respects Jina free rate limits
+          await sleep(2000);
+        }
+
+        updateScanProgress(candidates.length, candidates.length);
+
+        if (!shortlist.length) {
+          setScanStatus(
+            `Scanned ${candidates.length} stories — none matched closely enough. ` +
+            `Try a different listing page or lower the threshold in the code (currently 0.65).`,
+            "warn"
+          );
+        } else {
+          setScanStatus(
+            `Found ${shortlist.length} similar ${shortlist.length === 1 ? "story" : "stories"} ` +
+            `out of ${candidates.length} scanned.`,
+            "success"
+          );
+          renderScanResults(shortlist);
+        }
+
+      } catch(e) {
+        console.error("Scanner error:", e);
+        setScanStatus(`Error: ${e.message}`, "error");
+      }
+
+      btn.disabled = false;
+    }
+
+    // Extract candidate story links from a listing page's markdown
+    function extractCandidateLinks(markdown, pageUrl) {
+      const baseHost = new URL(pageUrl).hostname;
+
+      const linkPattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+      const allLinks    = [];
+      let m;
+      while ((m = linkPattern.exec(markdown)) !== null) {
+        allLinks.push({ text: m[1].trim(), url: m[2] });
+      }
+
+      // Skip common navigation / utility paths
+      const skipPaths = /\/(about|contact|login|register|signup|terms|privacy|help|faq|search|tags?|categor|author|user|profile|settings|advertise|sitemap|rss|feed|comment|forum|home)\/?(\?|#|$)/i;
+
+      const seen = new Set();
+      return allLinks.filter(l => {
+        try {
+          const u = new URL(l.url);
+          if (u.hostname !== baseHost) return false;       // different domain
+          if (l.url === pageUrl) return false;             // the listing page itself
+          if (skipPaths.test(u.pathname)) return false;   // utility pages
+          if (u.pathname === "/" || u.pathname === "") return false; // home
+          if (l.text.length < 3) return false;            // empty or icon-only links
+          if (seen.has(l.url)) return false;              // duplicates
+          seen.add(l.url);
+          return true;
+        } catch { return false; }
+      });
+    }
+
+    // Render shortlisted discovery results sorted by score
+    function renderScanResults(results) {
+      results.sort((a, b) => b.score - a.score);
+
+      const html = results.map(r => {
+        const domain = getDomain(r.url);
+        const pct    = Math.round(r.score * 100);
+        // Use link text as title if it looks like a real title (not a URL or too short)
+        const title  = r.text && r.text.length > 4 && r.text.length < 150 && !r.text.startsWith("http")
+          ? r.text : domain;
+        const author = r.matchedAuthor ? ` by ${r.matchedAuthor}` : "";
+        return `
+          <div class="scan-result">
+            <a class="story-title" href="${r.url}" target="_blank" rel="noopener noreferrer">${title}</a>
+            <div class="story-meta" style="margin-bottom:6px;">
+              <span class="story-site">${domain}</span>
+              <span class="sim-score">${pct}% match</span>
+            </div>
+            <p class="scan-match-label">Similar to: <em>${r.matchedName}</em>${author}</p>
+            <button class="scan-add-btn" onclick="addFromDiscovery('${r.url.replace(/'/g, "\\'")}')">
+              + Add to Log
+            </button>
+          </div>`;
+      }).join("");
+
+      document.getElementById("scanResults").innerHTML = html;
+    }
+
+    // Pre-fill the Add Story form with a discovered URL so the user can review and save
+    function addFromDiscovery(url) {
+      document.getElementById("link").value = url;
+      fetchMeta(); // auto-fills title and author via Microlink
+      document.querySelector(".card").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function updateScanProgress(done, total) {
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById("scanProgressBar").style.width = `${pct}%`;
+    }
+
+    function setScanStatus(msg, type) {
+      const el = document.getElementById("scanStatus");
+      el.textContent = msg;
+      el.className   = `embed-status ${type || ""}`.trim();
+    }
+
+    // ── Enter key triggers addStory only when focus is NOT on search box
     document.addEventListener("keydown", e => {
       if (e.key === "Enter" && document.activeElement.id !== "search") addStory();
     });
